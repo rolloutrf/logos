@@ -28,12 +28,11 @@ jobs:
           aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
           aws configure set default.region ru-central1
 
-      - name: Sync NSPK svgs to Yandex Object Storage
+      - name: Upload NSPK svgs to Yandex Object Storage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
         run: |
-          aws s3 sync NSPK s3://logos-cdn/svg/ \
-            --endpoint-url https://storage.yandexcloud.net \
-            --exclude "*" --include "*.svg" \
-            --delete
+          find NSPK -type f -name "*.svg" -print0 | \
+            xargs -0 -n1 -I{} aws s3 cp "{}" "s3://logos-cdn/svg/$(basename "{}")" \
+              --endpoint-url https://storage.yandexcloud.net
