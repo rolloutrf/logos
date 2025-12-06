@@ -1,0 +1,39 @@
+name: Deploy NSPK logos to Yandex Object Storage
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'NSPK/**'   # запускать только если меняется что-то в NSPK
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Configure AWS (Yandex Object Storage)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+          aws configure set default.region ru-central1
+
+      - name: Sync NSPK svgs to Yandex Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
+        run: |
+          aws s3 sync NSPK s3://logos-cdn/svg/ \
+            --endpoint-url https://storage.yandexcloud.net \
+            --exclude "*" --include "*.svg" \
+            --delete
